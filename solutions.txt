@@ -1,0 +1,13 @@
+Serial (Ach):
+    3x3_easy => 0.02
+    4x4_easy => 6.62
+    4x4_hard_1 => 59.75
+    4x4_hard_2 => 111.12
+    4x4_hard_3 => 119.32
+
+Parallel (Arch 6 Cores):
+    3x3_easy =>
+    4x4_easy =>
+    4x4_hard_1 =>
+    4x4_hard_2 =>
+    4x4_hard_3 =>

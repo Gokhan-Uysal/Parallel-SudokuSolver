@@ -7,6 +7,7 @@
 #define EMPTY 0
 
 #define MAX_SIZE 25
+#define THREAD_NUM 6
 
 int findEmptyLocation(int matrix[MAX_SIZE][MAX_SIZE], int *row, int *col, int box_size);
 
@@ -56,10 +57,58 @@ int solveSudoku(int row, int col, int matrix[MAX_SIZE][MAX_SIZE], int box_sz, in
 
 				if (solveSudoku(row, col + 1, matrix, box_sz, grid_sz))
 					printMatrix(matrix, box_sz);
-
 				matrix[row][col] = EMPTY;
 			}
 		}
+	}
+	return 0;
+}
+
+int solveSudokuParallel(int row, int col, int matrix[MAX_SIZE][MAX_SIZE], int box_sz, int grid_sz)
+{
+	if (col > (box_sz - 1))
+	{
+		col = 0;
+		row++;
+	}
+	if (row > (box_sz - 1))
+	{
+		return 1;
+	}
+	if (matrix[row][col] != EMPTY)
+	{
+		if (solveSudoku(row, col + 1, matrix, box_sz, grid_sz))
+		{
+			printMatrix(matrix, box_sz);
+		}
+	}
+	else
+	{
+		int num;
+		int result = EMPTY;
+
+#pragma omp parallel private(num) shared(box_sz, grid_sz, matrix, row, col)
+		{
+#pragma omp for
+			for (num = 1; num <= box_sz; num++)
+			{
+				if (canBeFilled(matrix, row, col, num, box_sz, grid_sz))
+				{
+#pragma omp critical
+					result = num;
+
+					if (solveSudoku(row, col + 1, matrix, box_sz, grid_sz))
+						printMatrix(matrix, box_sz);
+#pragma omp critical
+					result = EMPTY;
+				}
+			}
+		}
+
+#pragma omp barrier
+
+		matrix[row][col] = result;
+		printMatrix(matrix, box_sz);
 	}
 	return 0;
 }
@@ -68,14 +117,12 @@ int existInRow(int matrix[MAX_SIZE][MAX_SIZE], int row, int num, int box_size)
 {
 	int col;
 	int result = 0;
-#pragma omp parallel for private(col)
+
 	for (col = 0; col < box_size; col++)
 	{
 		if (matrix[row][col] == num)
 			result = 1;
 	}
-
-#pragma omp barrier
 	return result;
 }
 
@@ -83,11 +130,10 @@ int existInColumn(int matrix[MAX_SIZE][MAX_SIZE], int col, int num, int box_size
 {
 	int row;
 	int result = 0;
-#pragma omp parallel for private(row)
+
 	for (row = 0; row < box_size; row++)
 		if (matrix[row][col] == num)
 			result = 1;
-#pragma omp barrier
 	return result;
 }
 
@@ -95,12 +141,11 @@ int existInGrid(int matrix[MAX_SIZE][MAX_SIZE], int gridOffsetRow, int gridOffse
 {
 	int row, col;
 	int result = 0;
-#pragma omp parallel for private(row, col) collapse(2)
+
 	for (row = 0; row < grid_sz; row++)
 		for (col = 0; col < grid_sz; col++)
 			if (matrix[row + gridOffsetRow][col + gridOffsetColumn] == num)
 				result = 1;
-#pragma omp barrier
 	return result;
 }
 
@@ -144,17 +189,21 @@ int main(int argc, char const *argv[])
 		exit(0);
 	}
 
+	omp_set_dynamic(0);
+	omp_set_num_threads(THREAD_NUM);
+	omp_get_num_threads();
+
 	int box_sz = atoi(argv[1]); // 9
-	int grid_sz = sqrt(box_sz); // 81
+	int grid_sz = sqrt(box_sz); // 3
 	char filename[256];
-	strcpy(filename, argv[2]);
+	strcpy(filename, argv[2]); // 3x3_easy.csv
 
 	int matrix[MAX_SIZE][MAX_SIZE];
 
-	readCSV(box_sz, filename, matrix); // 9 test [][] -> puts given ccs to the integer matrix
+	readCSV(box_sz, filename, matrix); // 9 3x3_easy.csv matrix[][]
 
 	double time1 = omp_get_wtime();
-	solveSudoku(0, 0, matrix, box_sz, grid_sz);
+	solveSudokuParallel(0, 0, matrix, box_sz, grid_sz); // 0 0 matrix[][] 9 3
 	printf("Elapsed time: %0.2lf\n", omp_get_wtime() - time1);
 	return 0;
 }
