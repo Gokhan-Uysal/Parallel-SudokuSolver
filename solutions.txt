@@ -7,7 +7,7 @@ Serial (Ach):
 
 Parallel (Arch 6 Cores):
     3x3_easy =>
-    4x4_easy =>
+    4x4_easy => 60.58
     4x4_hard_1 =>
     4x4_hard_2 =>
     4x4_hard_3 =>

@@ -51,7 +51,8 @@ int solveSudoku(int row, int col, int matrix[MAX_SIZE][MAX_SIZE], int box_sz, in
 		int num;
 		for (num = 1; num <= box_sz; num++)
 		{
-			if (canBeFilled(matrix, row, col, num, box_sz, grid_sz))
+			int result = canBeFilled(matrix, row, col, num, box_sz, grid_sz);
+			if (result)
 			{
 				matrix[row][col] = num;
 
@@ -94,21 +95,21 @@ int solveSudokuParallel(int row, int col, int matrix[MAX_SIZE][MAX_SIZE], int bo
 			{
 				if (canBeFilled(matrix, row, col, num, box_sz, grid_sz))
 				{
-#pragma omp critical
-					result = num;
+					int matrix_copy[MAX_SIZE][MAX_SIZE];
+					memcpy(matrix_copy, matrix, sizeof(int) * pow(MAX_SIZE, 2));
 
-					if (solveSudoku(row, col + 1, matrix, box_sz, grid_sz))
+#pragma omp critical
+					matrix[row][col] = num;
+
+					if (solveSudokuParallel(row, col + 1, matrix_copy, box_sz, grid_sz))
 						printMatrix(matrix, box_sz);
 #pragma omp critical
-					result = EMPTY;
+					matrix[row][col] = EMPTY;
 				}
 			}
 		}
 
 #pragma omp barrier
-
-		matrix[row][col] = result;
-		printMatrix(matrix, box_sz);
 	}
 	return 0;
 }
@@ -191,7 +192,7 @@ int main(int argc, char const *argv[])
 
 	omp_set_dynamic(0);
 	omp_set_num_threads(THREAD_NUM);
-	omp_get_num_threads();
+	printf("Threads using: %d\n", omp_get_num_threads());
 
 	int box_sz = atoi(argv[1]); // 9
 	int grid_sz = sqrt(box_sz); // 3
