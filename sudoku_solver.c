@@ -93,18 +93,17 @@ int solveSudokuParallel(int row, int col, int matrix[MAX_SIZE][MAX_SIZE], int bo
 #pragma omp for
 			for (num = 1; num <= box_sz; num++)
 			{
-				if (canBeFilled(matrix, row, col, num, box_sz, grid_sz))
+				int matrix_copy[MAX_SIZE][MAX_SIZE];
+				memcpy(matrix_copy, matrix, sizeof(int) * pow(MAX_SIZE, 2));
+				if (canBeFilled(matrix_copy, row, col, num, box_sz, grid_sz))
 				{
-					int matrix_copy[MAX_SIZE][MAX_SIZE];
-					memcpy(matrix_copy, matrix, sizeof(int) * pow(MAX_SIZE, 2));
-
 #pragma omp critical
-					matrix[row][col] = num;
+					matrix_copy[row][col] = num;
 
 					if (solveSudokuParallel(row, col + 1, matrix_copy, box_sz, grid_sz))
-						printMatrix(matrix, box_sz);
+						printMatrix(matrix_copy, box_sz);
 #pragma omp critical
-					matrix[row][col] = EMPTY;
+					matrix_copy[row][col] = EMPTY;
 				}
 			}
 		}
