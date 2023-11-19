@@ -7,7 +7,9 @@
 #define EMPTY 0
 
 #define MAX_SIZE 25
-#define THREAD_NUM 7
+#define THREAD_NUM 6
+
+int cutoff = 10;
 
 int findEmptyLocation(int matrix[MAX_SIZE][MAX_SIZE], int *row, int *col, int box_size);
 
@@ -78,7 +80,7 @@ int solveSudokuParallel(int row, int col, int matrix[MAX_SIZE][MAX_SIZE], int bo
 	}
 	if (matrix[row][col] != EMPTY)
 	{
-		if (solveSudoku(row, col + 1, matrix, box_sz, grid_sz))
+		if (solveSudokuParallel(row, col + 1, matrix, box_sz, grid_sz))
 		{
 			printMatrix(matrix, box_sz);
 		}
@@ -86,13 +88,14 @@ int solveSudokuParallel(int row, int col, int matrix[MAX_SIZE][MAX_SIZE], int bo
 	else
 	{
 		int num;
-#pragma omp parallel private(num) shared(box_sz, grid_sz, matrix, row, col)
+#pragma omp parallel private(num) shared(box_sz, grid_sz, matrix, row, col) num_threads(THREAD_NUM)
 		{
 #pragma omp for
 			for (num = 1; num <= box_sz; num++)
 			{
 				int matrix_copy[MAX_SIZE][MAX_SIZE];
 				memcpy(matrix_copy, matrix, sizeof(int) * pow(MAX_SIZE, 2));
+
 				if (canBeFilled(matrix_copy, row, col, num, box_sz, grid_sz))
 				{
 #pragma omp critical
@@ -113,6 +116,7 @@ int solveSudokuParallel(int row, int col, int matrix[MAX_SIZE][MAX_SIZE], int bo
 
 int solveSudokuParallelCutoff(int row, int col, int matrix[MAX_SIZE][MAX_SIZE], int box_sz, int grid_sz, int depth)
 {
+
 	if (col > (box_sz - 1))
 	{
 		col = 0;
@@ -124,7 +128,7 @@ int solveSudokuParallelCutoff(int row, int col, int matrix[MAX_SIZE][MAX_SIZE], 
 	}
 	if (matrix[row][col] != EMPTY)
 	{
-		if (solveSudoku(row, col + 1, matrix, box_sz, grid_sz))
+		if (solveSudokuParallelCutoff(row, col + 1, matrix, box_sz, grid_sz, depth))
 		{
 			printMatrix(matrix, box_sz);
 		}
@@ -132,42 +136,37 @@ int solveSudokuParallelCutoff(int row, int col, int matrix[MAX_SIZE][MAX_SIZE], 
 	else
 	{
 		int num;
-		if (depth > box_sz)
+		if (depth > cutoff)
 		{
-			for (num = 1; num <= box_sz; num++)
-			{
-				int result = canBeFilled(matrix, row, col, num, box_sz, grid_sz);
-				if (result)
-				{
-					matrix[row][col] = num;
-
-					if (solveSudokuParallelCutoff(row, col + 1, matrix, box_sz, grid_sz, depth))
-						printMatrix(matrix, box_sz);
-					matrix[row][col] = EMPTY;
-				}
-			}
+			solveSudoku(row, col, matrix, box_sz, grid_sz);
 		}
-
-#pragma omp parallel private(num) shared(box_sz, grid_sz, matrix, row, col, depth)
+		else
 		{
-#pragma omp for
-			for (num = 1; num <= box_sz; num++)
+#pragma omp parallel private(num) shared(box_sz, grid_sz, matrix, row, col, depth)
 			{
-				int matrix_copy[MAX_SIZE][MAX_SIZE];
-				memcpy(matrix_copy, matrix, sizeof(int) * pow(MAX_SIZE, 2));
-				if (canBeFilled(matrix_copy, row, col, num, box_sz, grid_sz))
+#pragma omp for
+				for (num = 1; num <= box_sz; num++)
 				{
-#pragma omp critical
-					depth++;
-					matrix_copy[row][col] = num;
+					int matrix_copy[MAX_SIZE][MAX_SIZE];
+					memcpy(matrix_copy, matrix, sizeof(int) * pow(MAX_SIZE, 2));
 
-					if (solveSudokuParallelCutoff(row, col + 1, matrix_copy, box_sz, grid_sz, depth))
-						printMatrix(matrix_copy, box_sz);
-					matrix_copy[row][col] = EMPTY;
+					if (canBeFilled(matrix_copy, row, col, num, box_sz, grid_sz))
+					{
+#pragma omp critical
+						depth += 1;
+#pragma omp critical
+						matrix_copy[row][col] = num;
+
+						if (solveSudokuParallelCutoff(row, col + 1, matrix_copy, box_sz, grid_sz, depth))
+							printMatrix(matrix_copy, box_sz);
+#pragma omp critical
+						matrix_copy[row][col] = EMPTY;
+					}
 				}
 			}
 		}
 	}
+#pragma omp barrier
 	return 0;
 }
 
@@ -215,6 +214,23 @@ int canBeFilled(int matrix[MAX_SIZE][MAX_SIZE], int row, int col, int num, int b
 		   matrix[row][col] == EMPTY;
 }
 
+int findCutoff(int matrix[MAX_SIZE][MAX_SIZE], int box_sz)
+{
+	int cutoff = 0;
+	int row, col;
+	for (row = 0; row < box_sz; row++)
+	{
+		for (col = 0; col < box_sz; col++)
+		{
+			if (matrix[row][col] == EMPTY)
+			{
+				cutoff++;
+			}
+		}
+	}
+	return cutoff;
+}
+
 void readCSV(int box_sz, char *filename, int matrix[MAX_SIZE][MAX_SIZE])
 {
 	FILE *file;
@@ -255,11 +271,11 @@ int main(int argc, char const *argv[])
 	strcpy(filename, argv[2]); // 3x3_easy.csv
 
 	int matrix[MAX_SIZE][MAX_SIZE];
-
-	readCSV(box_sz, filename, matrix); // 9 3x3_easy.csv matrix[][]
+	readCSV(box_sz, filename, matrix);
+	// cutoff = findCutoff(matrix, box_sz);
 
 	double time1 = omp_get_wtime();
-	solveSudokuParallelCutoff(0, 0, matrix, box_sz, grid_sz, 0); // 0 0 matrix[][] 9 3
+	solveSudokuParallel(0, 0, matrix, box_sz, grid_sz);
 	printf("Elapsed time: %0.2lf\n", omp_get_wtime() - time1);
 	return 0;
 }

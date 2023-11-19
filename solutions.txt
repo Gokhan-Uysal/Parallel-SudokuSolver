@@ -11,3 +11,10 @@ Parallel (Arch 6 Cores):
     4x4_hard_1 => 52.72
     4x4_hard_2 => 100.14
     4x4_hard_3 => 109.42
+
+Parallel With Cutoff (Arch 6 Cores):
+    3x3_easy =>
+    4x4_easy =>
+    4x4_hard_1 => 57.08
+    4x4_hard_2 => 106.18
+    4x4_hard_3 => 123.39
