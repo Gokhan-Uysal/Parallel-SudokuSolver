@@ -1,0 +1,29 @@
+Serial (Ach):
+    4x4_easy => 6.62
+    4x4_hard_1 => 59.75
+    4x4_hard_2 => 111.12
+    4x4_hard_3 => 119.32
+
+Serial Early (Ach):
+    4x4_easy => 0.0.5
+    4x4_hard_1 => 0.34
+    4x4_hard_2 => 0.65
+    4x4_hard_3 => 0.69
+
+Parallel (Arch 6 Cores):
+    4x4_easy => 13.12
+    4x4_hard_1 => 126.18
+    4x4_hard_2 => 238.98
+    4x4_hard_3 => 261.00
+
+Parallel With Cutoff (Arch 6 Cores):
+    4x4_easy => 4.67
+    4x4_hard_1 => 53.28
+    4x4_hard_2 => 106.18
+    4x4_hard_3 => 114.03
+
+Parallel With Early (Arch 6 Cores):
+    4x4_easy => 4.67
+    4x4_hard_1 => 0.87
+    4x4_hard_2 => 1.58
+    4x4_hard_3 => 1.72
