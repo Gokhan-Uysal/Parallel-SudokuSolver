@@ -8,7 +8,7 @@
 #define EMPTY 0
 
 #define MAX_SIZE 25
-#define THREAD_NUM 6
+#define THREAD_NUM 9
 
 int cutoff = 10;
 bool isSolved = false;
@@ -117,6 +117,7 @@ int solveSudokuEarly(int row, int col, int matrix[MAX_SIZE][MAX_SIZE], int box_s
 
 	return 0;
 }
+
 int solveSudokuParallel(int row, int col, int matrix[MAX_SIZE][MAX_SIZE], int box_sz, int grid_sz)
 {
 	if (col > (box_sz - 1))
@@ -138,16 +139,18 @@ int solveSudokuParallel(int row, int col, int matrix[MAX_SIZE][MAX_SIZE], int bo
 	else
 	{
 		int num;
-#pragma omp parallel private(num) shared(box_sz, grid_sz, matrix, row, col) num_threads(THREAD_NUM)
+#pragma omp parallel private(num) shared(box_sz, grid_sz, matrix, row, col)
 		{
 #pragma omp for nowait
 			for (num = 1; num <= box_sz; num++)
 			{
-				int matrix_copy[MAX_SIZE][MAX_SIZE];
-				memcpy(matrix_copy, matrix, sizeof(int) * pow(MAX_SIZE, 2));
-
-				if (canBeFilled(matrix_copy, row, col, num, box_sz, grid_sz))
+				if (canBeFilled(matrix, row, col, num, box_sz, grid_sz))
 				{
+					int matrix_copy[MAX_SIZE][MAX_SIZE];
+#pragma omp critical
+					{
+						memcpy(matrix_copy, matrix, sizeof(int) * pow(MAX_SIZE, 2));
+					}
 					matrix_copy[row][col] = num;
 
 					if (solveSudokuParallel(row, col + 1, matrix_copy, box_sz, grid_sz))
@@ -367,6 +370,7 @@ int main(int argc, char const *argv[])
 	}
 
 	omp_set_num_threads(THREAD_NUM);
+	printf("Number of threads: %d\n", THREAD_NUM);
 
 	int box_sz = atoi(argv[1]); // 9
 	int grid_sz = sqrt(box_sz); // 3
@@ -379,7 +383,7 @@ int main(int argc, char const *argv[])
 
 	double time1 = omp_get_wtime();
 	cutoff = findCutoff(matrix, box_sz);
-	solveSudokuEarly(0, 0, matrix, box_sz, grid_sz);
+	solveSudokuParallelCutoff(0, 0, matrix, box_sz, grid_sz, 3);
 	printf("Elapsed time: %0.2lf\n", omp_get_wtime() - time1);
 	return 0;
 }
