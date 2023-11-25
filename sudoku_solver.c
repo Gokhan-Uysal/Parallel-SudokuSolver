@@ -179,7 +179,7 @@ int solveSudokuParallelEarly(int row, int col, int matrix[MAX_SIZE][MAX_SIZE], i
 	}
 	if (matrix[row][col] != EMPTY)
 	{
-		if (solveSudokuParallel(row, col + 1, matrix, box_sz, grid_sz))
+		if (solveSudokuParallelEarly(row, col + 1, matrix, box_sz, grid_sz))
 		{
 			printMatrix(matrix, box_sz);
 		}
@@ -196,7 +196,7 @@ int solveSudokuParallelEarly(int row, int col, int matrix[MAX_SIZE][MAX_SIZE], i
 #pragma omp task firstprivate(row, col, num) shared(box_sz, grid_sz)
 				{
 					matrix_copy[row][col] = num;
-					if (solveSudokuParallel(row, col + 1, matrix_copy, box_sz, grid_sz))
+					if (solveSudokuParallelEarly(row, col + 1, matrix_copy, box_sz, grid_sz))
 					{
 						printMatrix(matrix_copy, box_sz);
 #pragma omp atomic write
@@ -378,7 +378,7 @@ int main(int argc, char const *argv[])
 #pragma omp parallel
 	{
 #pragma omp single
-		solveSudokuParallelCutoff(0, 0, matrix, box_sz, grid_sz, 0);
+		solveSudokuParallel(0, 0, matrix, box_sz, grid_sz);
 	}
 
 	printf("Elapsed time: %0.2lf\n", omp_get_wtime() - time1);

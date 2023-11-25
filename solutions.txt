@@ -45,6 +45,6 @@ Parallel With Cutoff (Orb 6 Cores):
     4x4_hard_3 => 52.33
 
 Parallel With Early (Orb 6 Cores):
-    4x4_hard_1 =>
-    4x4_hard_2 =>
-    4x4_hard_3 =>
+    4x4_hard_1 => 0.52
+    4x4_hard_2 => 0.92
+    4x4_hard_3 => 1.01
